@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giao diện Điều khiển Tủ lạnh (ERa)</title>
+    <title>Giao diện Điều khiển Tủ lạnh (ERa - Actions)</title>
     <style>
         :root {
             --primary-color: #00a99d; --primary-light: #e6f7f6;
@@ -169,18 +169,24 @@
                 dialPhysics: { minAngle: -135, maxAngle: 135, arc: 270 }
             };
             
-            // --- KHAI BÁO ERA WIDGET VÀ CÁC BIẾN CONFIG ---
+            // --- KHAI BÁO ERA WIDGET VÀ CÁC BIẾN CONFIG / ACTIONS ---
             const eraWidget = new EraWidget();
+            
+            // (GIỮ NGUYÊN) 6 Biến cho "Giá trị hiện thời" (để ĐỌC)
             let configCurrentTemp = null;
             let configCurrentHumid = null;
             let configPower = null;
             let configMode = null;
             let configSetpointTemp = null;
             let configSetpointHumid = null;
+            
+            // (MỚI) Biến cho "Actions" (để GHI)
+            let actions = []; // Sẽ chứa 4 actions: [POWER_ON, POWER_OFF, MODE_TEMP, MODE_HUMID]
 
 
             // --- LẤY CÁC PHẦN TỬ DOM ---
             const powerToggle = document.getElementById('power-toggle');
+            const powerToggleLabel = document.querySelector('label[for="power-toggle"]'); // (MỚI) Lấy label
             const powerStatusText = document.getElementById('power-status-text');
             const currentTemp = document.getElementById('current-temperature');
             const currentHumid = document.getElementById('current-humidity');
@@ -192,11 +198,11 @@
             const dialSubtext = document.getElementById('dial-subtext');
 
             // --- CÁC HÀM CẬP NHẬT GIAO DIỆN ---
+            // (Toàn bộ các hàm này không thay đổi)
             function updatePowerUI() {
-                powerToggle.checked = state.power;
+                powerToggle.checked = state.power; // Cập nhật trạng thái "checked" của checkbox
                 powerStatusText.textContent = state.power ? 'On' : 'Off';
             }
-
             function updateModeUI() {
                 const currentSetpoint = state.setpoints[state.mode];
                 if (state.mode === 'temperature') {
@@ -208,62 +214,33 @@
                 }
                 updateDialUI(currentSetpoint);
             }
-
             function updateActualValuesUI() {
                 currentTemp.textContent = Math.round(state.actualValues.temperature);
                 currentHumid.textContent = Math.round(state.actualValues.humidity);
             }
-
             function updateDialUI(value) {
                 const config = state.dialConfig[state.mode];
                 if (!config) return; 
-
                 const { min, max, unit, subtext } = config;
                 const { minAngle, arc } = state.dialPhysics;
-                
                 const clampedValue = Math.max(min, Math.min(max, value));
                 dialValueDisplay.textContent = Math.round(clampedValue) + unit;
                 dialSubtext.textContent = subtext;
-
                 const percent = (clampedValue - min) / (max - min);
                 const angleDeg = percent * arc + minAngle;
                 const angleRad = angleDeg * (Math.PI / 180);
-
                 const containerRect = dialContainer.getBoundingClientRect();
                 const dialRadius = containerRect.width / 2;
                 const handleRadius = dialHandle.offsetWidth / 2;
                 const trackRadius = (dialRadius - handleRadius) - 15; 
-
                 const x = dialRadius + trackRadius * Math.cos(angleRad) - handleRadius;
                 const y = dialRadius + trackRadius * Math.sin(angleRad) - handleRadius;
-
                 dialHandle.style.transform = `translate(${x}px, ${y}px)`;
             }
 
-            // --- HÀM GỬI DỮ LIỆU LÊN ERA PLATFORM ---
-            function sendDataToEra(key, value) {
-                console.log(`Gửi đến Era: ${key} =`, value);
-                
-                switch(key) {
-                    case 'power':
-                        if (configPower) eraWidget.sendData(configPower.id, value ? 1 : 0);
-                        break;
-                    case 'mode':
-                        if (configMode) eraWidget.sendData(configMode.id, value);
-                        break;
-                    case 'setpoint':
-                        if (value.mode === 'temperature' && configSetpointTemp) {
-                            eraWidget.sendData(configSetpointTemp.id, value.value);
-                        } else if (value.mode === 'humidity' && configSetpointHumid) {
-                            eraWidget.sendData(configSetpointHumid.id, value.value);
-                        }
-                        break;
-                }
-            }
-
             // --- LOGIC CỦA VÒNG XOAY (DIAL) ---
+            // (Phần này KHÔNG THAY ĐỔI, vẫn dùng sendData)
             let isDragging = false;
-
             function getAngleFromEvent(event) {
                 const e = event.touches ? event.touches[0] : event;
                 const rect = dialContainer.getBoundingClientRect();
@@ -272,7 +249,6 @@
                 const angleRad = Math.atan2(e.clientY - centerY, e.clientX - centerX);
                 return angleRad * (180 / Math.PI);
             }
-
             function onDialMove(event) {
                 if (!isDragging) return;
                 event.preventDefault();
@@ -288,7 +264,6 @@
                 state.setpoints[state.mode] = newValue;
                 updateDialUI(newValue);
             }
-
             function onDialStart(event) {
                 isDragging = true;
                 window.addEventListener('mousemove', onDialMove);
@@ -296,7 +271,6 @@
                 window.addEventListener('mouseup', onDialEnd);
                 window.addEventListener('touchend', onDialEnd);
             }
-
             function onDialEnd(event) {
                 if (!isDragging) return;
                 isDragging = false;
@@ -304,59 +278,103 @@
                 window.removeEventListener('touchmove', onDialMove);
                 window.removeEventListener('mouseup', onDialEnd);
                 window.removeEventListener('touchend', onDialEnd);
+                
+                // Gửi giá trị setpoint (VẪN DÙNG SENDDATA)
                 const finalSetpoint = state.setpoints[state.mode];
-                sendDataToEra('setpoint', { mode: state.mode, value: finalSetpoint });
+                if (state.mode === 'temperature' && configSetpointTemp) {
+                    // Gửi trực tiếp giá trị vào V-pin (Config 5)
+                    eraWidget.sendData(configSetpointTemp.id, finalSetpoint);
+                } else if (state.mode === 'humidity' && configSetpointHumid) {
+                    // Gửi trực tiếp giá trị vào V-pin (Config 6)
+                    eraWidget.sendData(configSetpointHumid.id, finalSetpoint);
+                }
             }
-
             dialHandle.addEventListener('mousedown', onDialStart);
             dialHandle.addEventListener('touchstart', onDialStart, { passive: false });
 
-            // --- GẮN EVENT LISTENERS ---
-            powerToggle.addEventListener('change', () => {
-                state.power = powerToggle.checked;
-                updatePowerUI();
-                sendDataToEra('power', state.power);
+            // --- (ĐÃ THAY ĐỔI) GẮN EVENT LISTENERS CHO CÁC NÚT ---
+
+            // 1. Nút Power (Dùng Actions)
+            // Phải bắt sự kiện trên LABEL vì INPUT bị ẩn (display: none)
+            powerToggleLabel.addEventListener('click', (e) => {
+                e.preventDefault(); // Ngăn checkbox tự thay đổi trạng thái ngay lập tức
+                console.log('Power clicked. Current state:', state.power);
+                
+                // Đọc state HIỆN TẠI (do server báo về), và gọi action ĐỐI LẬP
+                if (state.power) {
+                    // Nếu đang ON, gọi action OFF (giả định là actions[1])
+                    if (actions[1]) {
+                        console.log('Triggering Action: POWER_OFF');
+                        eraWidget.triggerAction(actions[1].action, null);
+                    }
+                } else {
+                    // Nếu đang OFF, gọi action ON (giả định là actions[0])
+                    if (actions[0]) {
+                        console.log('Triggering Action: POWER_ON');
+                        eraWidget.triggerAction(actions[0].action, null);
+                    }
+                }
+                // *** CHÚ Ý: Chúng ta không gọi updatePowerUI() ở đây.
+                // Chúng ta chờ 'onValues' từ server xác nhận lệnh!
             });
+
+            // 2. Nút Mode Temperature (Dùng Actions)
             btnTemperature.addEventListener('click', () => {
-                if (state.mode === 'temperature') return;
-                state.mode = 'temperature';
-                updateModeUI();
-                sendDataToEra('mode', state.mode);
+                if (state.mode === 'temperature') return; // Đã ở chế độ Temp, không làm gì
+                
+                // Gọi action MODE_TEMP (giả định là actions[2])
+                if (actions[2]) {
+                    console.log('Triggering Action: MODE_TEMP');
+                    eraWidget.triggerAction(actions[2].action, null);
+                }
             });
+
+            // 3. Nút Mode Humidity (Dùng Actions)
             btnHumidity.addEventListener('click', () => {
-                if (state.mode === 'humidity') return;
-                state.mode = 'humidity';
-                updateModeUI();
-                sendDataToEra('mode', state.mode);
+                if (state.mode === 'humidity') return; // Đã ở chế độ Humid, không làm gì
+
+                // Gọi action MODE_HUMID (giả định là actions[3])
+                if (actions[3]) {
+                    console.log('Triggering Action: MODE_HUMID');
+                    eraWidget.triggerAction(actions[3].action, null);
+                }
             });
 
             // --- KHỞI TẠO BAN ĐẦU ---
             function initializeUI() {
                 
-                // --- KHỞI TẠO ERA WIDGET ---
+                // --- (ĐÃ THAY ĐỔI) KHỞI TẠO ERA WIDGET ---
                 eraWidget.init({
+                    // (MỚI) Yêu cầu cả hai
                     needRealtimeConfigs: true,
-                    maxRealtimeConfigsCount: 6, // Cần 6 config
-                    minRealtimeConfigsCount: 6, // Bắt buộc phải có 6
+                    needActions: true, 
                     
-                    /* ====================================================== */
-                    /* === (ĐÃ THAY ĐỔI) HÀM CALLBACK CẤU HÌNH === */
-                    /* ====================================================== */
+                    // (GIỮ NGUYÊN) Cần 6 config để ĐỌC
+                    maxRealtimeConfigsCount: 6,
+                    minRealtimeConfigsCount: 6, 
+                    
+                    // (MỚI) Cần 4 action để GHI
+                    maxActionsCount: 4, 
+                    minActionsCount: 4,
+                    
+                    /* Hàm callback được gọi khi có cấu hình được nhận từ server */
                     onConfiguration: (configuration) => {
                         console.log('Era Config Received:', configuration);
-                        const configs = configuration.realtime_configs;
-
-                        // 1. Gán config theo đúng yêu cầu MỚI của bạn
-                        configPower = configs[0];          // V-pin Power là mục SỐ 1
-                        configCurrentTemp = configs[1];    // V3 - Current Temp là mục SỐ 2
-                        configCurrentHumid = configs[2];   // V4 - Current Humid là mục SỐ 3
                         
-                        // 2. Gán các config còn lại 
-                        configMode = configs[3];           // Config cho Mode
-                        configSetpointTemp = configs[4];   // Config cho Setpoint Temp
-                        configSetpointHumid = configs[5];  // Config cho Setpoint Humid
+                        // 1. Lấy 6 config (để ĐỌC)
+                        // Sắp xếp theo thứ tự bạn yêu cầu (Power ở [0])
+                        const configs = configuration.realtime_configs;
+                        configPower = configs[0];
+                        configCurrentTemp = configs[1];
+                        configCurrentHumid = configs[2];
+                        configMode = configs[3];
+                        configSetpointTemp = configs[4];
+                        configSetpointHumid = configs[5];
+                        
+                        // 2. (MỚI) Lấy 4 action (để GHI)
+                        actions = configuration.actions;
+                        console.log('Actions loaded:', actions);
                     },
-                    /* ====================================================== */
                     
                     /* Hàm callback được gọi khi nhận giá trị mới từ server */
                     onValues: (values) => {
@@ -377,7 +395,7 @@
                             const serverPower = !!values[configPower.id].value; 
                             if (state.power !== serverPower) {
                                 state.power = serverPower;
-                                updatePowerUI(); 
+                                updatePowerUI(); // Cập nhật UI (gồm cả checkbox)
                             }
                         }
 
@@ -420,4 +438,3 @@
     </script>
 </body>
 </html>
-
