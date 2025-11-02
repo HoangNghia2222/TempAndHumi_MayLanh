@@ -3,110 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giao diện Điều khiển Tủ lạnh (ERa)</title>
+    <title>Giao diện Điều khiển Tủ lạnh</title>
     <style>
+        /* --- CÀI ĐẶT CƠ BẢN --- */
         :root {
-            --primary-color: #00a99d; --primary-light: #e6f7f6;
-            --inactive-color: #eaedf1; --text-dark: #2c3e50;
-            --text-light: #7f8c8d; --bg-color: #f4f7f9;
-            --white: #ffffff; --border-color: #dce3e9;
+            --primary-color: #00a99d; /* Màu xanh teal chủ đạo */
+            --primary-light: #e6f7f6;  /* Màu xanh teal nhạt */
+            --inactive-color: #eaedf1; /* Màu nền nút inactive */
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+            --bg-color: #f4f7f9;      /* Màu nền tổng thể */
+            --white: #ffffff;
+            --border-color: #dce3e9;
         }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color); display: flex; justify-content: center;
-            align-items: flex-start; padding: 20px; margin: 0; box-sizing: border-box;
-            color: var(--text-dark); min-height: 100vh;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            margin: 0;
+            box-sizing: border-box;
+            color: var(--text-dark);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
+
         .container {
-            width: 100%; max-width: 360px; background-color: var(--white);
-            border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+            width: 100%;
+            max-width: 360px;
+            background-color: var(--white);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
             overflow: hidden;
         }
-        .power-section { display: flex; justify-content: flex-end; margin-bottom: 20px; }
-        .power-toggle-input { display: none; }
+
+        /* --- NÚT ON/OFF --- */
+        .power-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .power-toggle-input {
+            display: none;
+        }
+
         .power-toggle-label {
-            display: inline-flex; align-items: center; cursor: pointer;
-            background-color: var(--inactive-color); border-radius: 99px;
-            padding: 4px; transition: background-color 0.3s ease;
-        }
-        .power-toggle-label span {
-            font-size: 14px; font-weight: 600; padding: 0 10px 0 14px;
-            color: var(--text-light); transition: color 0.3s ease;
-        }
-        .power-toggle-icon {
-            width: 32px; height: 32px; border-radius: 50%; background-color: #b0bec5;
-            display: flex; justify-content: center; align-items: center;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            background-color: var(--inactive-color);
+            border-radius: 99px;
+            padding: 4px;
             transition: background-color 0.3s ease;
         }
-        .power-toggle-icon svg { width: 18px; height: 18px; stroke: var(--white); stroke-width: 2; }
-        .power-toggle-input:checked + .power-toggle-label { background-color: var(--primary-light); }
+
+        .power-toggle-label span {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 0 10px 0 14px;
+            color: var(--text-light);
+            transition: color 0.3s ease;
+        }
+
+        .power-toggle-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #b0bec5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .power-toggle-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--white);
+            stroke-width: 2;
+        }
+
+        /* Trạng thái ON */
+        .power-toggle-input:checked + .power-toggle-label {
+            background-color: var(--primary-light);
+        }
+
         .power-toggle-input:checked + .power-toggle-label span {
-            color: var(--text-dark); order: 2; padding: 0 14px 0 10px;
+            color: var(--text-dark);
+            order: 2; /* Đảo vị trí text và icon */
+            padding: 0 14px 0 10px;
         }
+
         .power-toggle-input:checked + .power-toggle-label .power-toggle-icon {
-            background-color: var(--primary-color); order: 1;
+            background-color: var(--primary-color);
+            order: 1;
         }
+
+        /* --- HIỂN THỊ NHIỆT ĐỘ / ĐỘ ẨM --- */
         .info-display {
-            display: flex; align-items: center; justify-content: center;
-            background-color: var(--primary-light); border-radius: 16px;
-            padding: 12px 20px; margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-light);
+            border-radius: 16px;
+            padding: 12px 20px;
+            margin-bottom: 24px;
         }
+
         .info-icon {
-            width: 36px; height: 36px; background-color: var(--primary-color);
-            border-radius: 50%; display: flex; justify-content: center;
-            align-items: center; margin-right: 16px;
+            width: 36px;
+            height: 36px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 16px;
         }
-        .info-icon svg { width: 20px; height: 20px; fill: var(--white); }
-        .info-text { font-size: 24px; font-weight: 700; color: var(--text-dark); letter-spacing: -0.5px; }
-        .info-text .unit { font-weight: 500; }
+
+        .info-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--white);
+        }
+
+        .info-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -0.5px;
+        }
+        
+        .info-text .unit {
+            font-weight: 500;
+        }
+
+        /* --- NÚT CHUYỂN CHẾ ĐỘ --- */
         .mode-toggle {
-            display: flex; background-color: var(--inactive-color);
-            border-radius: 16px; padding: 6px; margin-bottom: 30px;
+            display: flex;
+            background-color: var(--inactive-color);
+            border-radius: 16px;
+            padding: 6px;
+            margin-bottom: 30px;
         }
+
         .mode-btn {
-            flex: 1; padding: 12px; border: none; background-color: transparent;
-            border-radius: 12px; font-size: 16px; font-weight: 600;
-            color: var(--text-light); cursor: pointer; transition: all 0.3s ease;
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background-color: transparent;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
+
         .mode-btn.active {
-            background-color: var(--primary-color); color: var(--white);
+            background-color: var(--primary-color);
+            color: var(--white);
             box-shadow: 0 4px 10px rgba(0, 169, 157, 0.3);
         }
+
+        /* --- VÒNG TRÒN ĐIỀU CHỈNH --- */
         .dial-container {
-            position: relative; width: 260px; height: 260px;
-            margin: 0 auto; touch-action: none;
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 0 auto;
+            touch-action: none; /* Quan trọng cho touch events */
         }
+
         .dial-track {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
             background: conic-gradient(from 240deg, #4d9cff, #b15dff, #ff8a5c, #ff8a5c, #b15dff, #4d9cff);
         }
+
         .dial-mask {
-            position: absolute; top: 30px; left: 30px; right: 30px; bottom: 30px;
-            background-color: var(--white); border-radius: 50%; z-index: 1;
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            right: 30px;
+            bottom: 30px;
+            background-color: var(--white);
+            border-radius: 50%;
+            z-index: 1;
         }
+        
         .dial-outline {
-            position: absolute; top: 25px; left: 25px; right: 25px; bottom: 25px;
-            border: 1px solid var(--border-color); border-radius: 50%; z-index: 2;
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            right: 25px;
+            bottom: 25px;
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            z-index: 2;
         }
+
         .dial-center-display {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); z-index: 3; text-align: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            text-align: center;
         }
-        .dial-temp-value { font-size: 52px; font-weight: 700; color: var(--text-dark); line-height: 1.1; }
-        .dial-subtext { font-size: 14px; font-weight: 500; color: var(--text-light); margin-top: 4px; }
+
+        .dial-temp-value {
+            font-size: 52px;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.1;
+        }
+
+        .dial-subtext {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
         .dial-handle {
-            position: absolute; width: 28px; height: 28px; background-color: var(--text-dark);
-            border: 4px solid var(--white); border-radius: 50%;
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            background-color: var(--text-dark);
+            border: 4px solid var(--white);
+            border-radius: 50%;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            z-index: 4; cursor: pointer; user-select: none;
+            z-index: 4;
+            cursor: pointer;
+            user-select: none;
+            /* Vị trí sẽ được set bằng JS */
         }
-        .dial-tick { display: none; }
+
+        /* Các số tĩnh không còn phù hợp vì dial thay đổi,
+           nên tôi sẽ ẩn chúng đi để tránh nhầm lẫn */
+        .dial-tick {
+           display: none;
+        }
+
     </style>
 </head>
 <body>
 
     <div class="container">
+
         <div class="power-section">
             <input type="checkbox" id="power-toggle" class="power-toggle-input" checked>
             <label for="power-toggle" class="power-toggle-label">
@@ -126,9 +281,9 @@
                 </svg>
             </div>
             <div class="info-text">
-                <span id="current-temperature">...</span><span class="unit">°C</span>
-                /
-                <span id="current-humidity">...</span><span class="unit">%</span>
+                <span id="current-temperature">35</span><span class="unit">°C</span> 
+                / 
+                <span id="current-humidity">24</span><span class="unit">%</span>
             </div>
         </div>
 
@@ -143,41 +298,51 @@
             <div class="dial-outline"></div>
             
             <div class="dial-center-display">
-                <div id="dial-value-display" class="dial-temp-value">...°</div>
-                <div id="dial-subtext" class="dial-subtext">...</div>
+                <div id="dial-value-display" class="dial-temp-value">24°</div>
+                <div id="dial-subtext" class="dial-subtext">Perfect Temp</div>
             </div>
             <div id="dial-handle" class="dial-handle"></div>
         </div>
 
     </div>
 
-    <script src="https://www.unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
-    
     <script>
         document.addEventListener('DOMContentLoaded', () => {
 
             // --- TRẠNG THÁI (STATE) CỦA ỨNG DỤNG ---
             let state = {
                 power: true,
-                mode: 'temperature',
-                actualValues: { temperature: 0, humidity: 0 }, 
-                setpoints: { temperature: 20, humidity: 50 }, 
-                dialConfig: {
-                    temperature: { min: 0, max: 40, unit: '°', subtext: 'Cài đặt nhiệt' },
-                    humidity: { min: 0, max: 100, unit: '%', subtext: 'Cài đặt ẩm' }
+                mode: 'temperature', // 'temperature' or 'humidity'
+                actualValues: {
+                    temperature: 35,
+                    humidity: 24
                 },
-                dialPhysics: { minAngle: -135, maxAngle: 135, arc: 270 }
+                setpoints: {
+                    temperature: 24, // Giá trị ban đầu của dial
+                    humidity: 50     // Giá trị mẫu cho độ ẩm
+                },
+                // Cài đặt riêng cho từng chế độ dial
+                dialConfig: {
+                    temperature: {
+                        min: 0,
+                        max: 40,
+                        unit: '°',
+                        subtext: 'Perfect Temp'
+                    },
+                    humidity: {
+                        min: 0,
+                        max: 100,
+                        unit: '%',
+                        subtext: 'Set Humidity'
+                    }
+                },
+                // Cài đặt chung của dial
+                dialPhysics: {
+                    minAngle: -135, // 7:30
+                    maxAngle: 135,  // 4:30
+                    arc: 270
+                }
             };
-            
-            // --- KHAI BÁO ERA WIDGET VÀ CÁC BIẾN CONFIG ---
-            const eraWidget = new EraWidget();
-            let configCurrentTemp = null;
-            let configCurrentHumid = null;
-            let configPower = null;
-            let configMode = null;
-            let configSetpointTemp = null;
-            let configSetpointHumid = null;
-
 
             // --- LẤY CÁC PHẦN TỬ DOM ---
             const powerToggle = document.getElementById('power-toggle');
@@ -186,19 +351,24 @@
             const currentHumid = document.getElementById('current-humidity');
             const btnTemperature = document.getElementById('mode-temperature');
             const btnHumidity = document.getElementById('mode-humidity');
+            
             const dialContainer = document.getElementById('dial-container');
             const dialHandle = document.getElementById('dial-handle');
             const dialValueDisplay = document.getElementById('dial-value-display');
             const dialSubtext = document.getElementById('dial-subtext');
 
             // --- CÁC HÀM CẬP NHẬT GIAO DIỆN ---
+            
+            /** Cập nhật nút Power */
             function updatePowerUI() {
                 powerToggle.checked = state.power;
                 powerStatusText.textContent = state.power ? 'On' : 'Off';
             }
 
+            /** Cập nhật chế độ (Temperature/Humidity) */
             function updateModeUI() {
                 const currentSetpoint = state.setpoints[state.mode];
+
                 if (state.mode === 'temperature') {
                     btnTemperature.classList.add('active');
                     btnHumidity.classList.remove('active');
@@ -206,25 +376,28 @@
                     btnTemperature.classList.remove('active');
                     btnHumidity.classList.add('active');
                 }
+                // Cập nhật dial theo setpoint của chế độ vừa chọn
                 updateDialUI(currentSetpoint);
             }
 
+            /** Cập nhật hiển thị nhiệt độ/độ ẩm thực tế */
             function updateActualValuesUI() {
-                currentTemp.textContent = Math.round(state.actualValues.temperature);
-                currentHumid.textContent = Math.round(state.actualValues.humidity);
+                currentTemp.textContent = state.actualValues.temperature;
+                currentHumid.textContent = state.actualValues.humidity;
             }
 
+            /** Cập nhật vòng xoay và số ở giữa */
             function updateDialUI(value) {
                 const config = state.dialConfig[state.mode];
-                if (!config) return; 
-
                 const { min, max, unit, subtext } = config;
                 const { minAngle, arc } = state.dialPhysics;
                 
+                // 1. Cập nhật số ở giữa và text phụ
                 const clampedValue = Math.max(min, Math.min(max, value));
                 dialValueDisplay.textContent = Math.round(clampedValue) + unit;
                 dialSubtext.textContent = subtext;
 
+                // 2. Tính toán và cập nhật vị trí handle
                 const percent = (clampedValue - min) / (max - min);
                 const angleDeg = percent * arc + minAngle;
                 const angleRad = angleDeg * (Math.PI / 180);
@@ -232,7 +405,7 @@
                 const containerRect = dialContainer.getBoundingClientRect();
                 const dialRadius = containerRect.width / 2;
                 const handleRadius = dialHandle.offsetWidth / 2;
-                const trackRadius = (dialRadius - handleRadius) - 15; 
+                const trackRadius = dialRadius - (handleRadius * 2);
 
                 const x = dialRadius + trackRadius * Math.cos(angleRad) - handleRadius;
                 const y = dialRadius + trackRadius * Math.sin(angleRad) - handleRadius;
@@ -240,25 +413,13 @@
                 dialHandle.style.transform = `translate(${x}px, ${y}px)`;
             }
 
-            // --- HÀM GỬI DỮ LIỆU LÊN ERA PLATFORM ---
+            // --- CÁC HÀM GỬI DỮ LIỆU LÊN ERA PLATFORM ---
             function sendDataToEra(key, value) {
                 console.log(`Gửi đến Era: ${key} =`, value);
-                
-                switch(key) {
-                    case 'power':
-                        if (configPower) eraWidget.sendData(configPower.id, value ? 1 : 0);
-                        break;
-                    case 'mode':
-                        if (configMode) eraWidget.sendData(configMode.id, value);
-                        break;
-                    case 'setpoint':
-                        if (value.mode === 'temperature' && configSetpointTemp) {
-                            eraWidget.sendData(configSetpointTemp.id, value.value);
-                        } else if (value.mode === 'humidity' && configSetpointHumid) {
-                            eraWidget.sendData(configSetpointHumid.id, value.value);
-                        }
-                        break;
-                }
+                // window.parent.postMessage({
+                //     type: 'era-data',
+                //     payload: { key, value }
+                // }, '*'); 
             }
 
             // --- LOGIC CỦA VÒNG XOAY (DIAL) ---
@@ -276,15 +437,26 @@
             function onDialMove(event) {
                 if (!isDragging) return;
                 event.preventDefault();
+
                 let angleDeg = getAngleFromEvent(event);
                 const config = state.dialConfig[state.mode];
                 const { min, max } = config;
                 const { minAngle, maxAngle, arc } = state.dialPhysics;
-                if (angleDeg > maxAngle && angleDeg < 180) { angleDeg = maxAngle; }
-                else if (angleDeg < minAngle && angleDeg > -180) { angleDeg = minAngle; }
+
+                // Xử lý "vùng chết"
+                if (angleDeg > maxAngle && angleDeg < 180) {
+                     angleDeg = maxAngle;
+                } else if (angleDeg < minAngle && angleDeg > -180) {
+                     angleDeg = minAngle;
+                }
+                
+                // Chuyển đổi góc thành giá trị
                 let percent = (angleDeg - minAngle) / arc;
                 percent = Math.max(0, Math.min(1, percent));
+                
                 const newValue = Math.round(percent * (max - min) + min);
+
+                // Cập nhật state và UI
                 state.setpoints[state.mode] = newValue;
                 updateDialUI(newValue);
             }
@@ -300,10 +472,13 @@
             function onDialEnd(event) {
                 if (!isDragging) return;
                 isDragging = false;
+                
                 window.removeEventListener('mousemove', onDialMove);
                 window.removeEventListener('touchmove', onDialMove);
                 window.removeEventListener('mouseup', onDialEnd);
                 window.removeEventListener('touchend', onDialEnd);
+
+                // Gửi giá trị setpoint cuối cùng
                 const finalSetpoint = state.setpoints[state.mode];
                 sendDataToEra('setpoint', { mode: state.mode, value: finalSetpoint });
             }
@@ -312,17 +487,22 @@
             dialHandle.addEventListener('touchstart', onDialStart, { passive: false });
 
             // --- GẮN EVENT LISTENERS ---
+
+            // 1. Nút Power
             powerToggle.addEventListener('change', () => {
                 state.power = powerToggle.checked;
                 updatePowerUI();
                 sendDataToEra('power', state.power);
             });
+
+            // 2. Nút Chế độ
             btnTemperature.addEventListener('click', () => {
                 if (state.mode === 'temperature') return;
                 state.mode = 'temperature';
                 updateModeUI();
                 sendDataToEra('mode', state.mode);
             });
+
             btnHumidity.addEventListener('click', () => {
                 if (state.mode === 'humidity') return;
                 state.mode = 'humidity';
@@ -332,90 +512,70 @@
 
             // --- KHỞI TẠO BAN ĐẦU ---
             function initializeUI() {
-                
-                // --- KHỞI TẠO ERA WIDGET ---
-                eraWidget.init({
-                    needRealtimeConfigs: true,
-                    maxRealtimeConfigsCount: 6, // Cần 6 config
-                    minRealtimeConfigsCount: 6, // Bắt buộc phải có 6
-                    
-                    /* ====================================================== */
-                    /* === (ĐÃ THAY ĐỔI) HÀM CALLBACK CẤU HÌNH === */
-                    /* ====================================================== */
-                    onConfiguration: (configuration) => {
-                        console.log('Era Config Received:', configuration);
-                        const configs = configuration.realtime_configs;
-
-                        // 1. Gán config theo đúng yêu cầu MỚI của bạn
-                        configPower = configs[0];          // V-pin Power là mục SỐ 1
-                        configCurrentTemp = configs[1];    // V3 - Current Temp là mục SỐ 2
-                        configCurrentHumid = configs[2];   // V4 - Current Humid là mục SỐ 3
-                        
-                        // 2. Gán các config còn lại 
-                        configMode = configs[3];           // Config cho Mode
-                        configSetpointTemp = configs[4];   // Config cho Setpoint Temp
-                        configSetpointHumid = configs[5];  // Config cho Setpoint Humid
-                    },
-                    /* ====================================================== */
-                    
-                    /* Hàm callback được gọi khi nhận giá trị mới từ server */
-                    onValues: (values) => {
-                        console.log('Era Values Received:', values);
-                        let needsModeUpdate = false; 
-
-                        // 1. CẬP NHẬT GIÁ TRỊ CẢM BIẾN (V3, V4)
-                        if (configCurrentTemp && values[configCurrentTemp.id] != null) {
-                            state.actualValues.temperature = values[configCurrentTemp.id].value;
-                        }
-                        if (configCurrentHumid && values[configCurrentHumid.id] != null) {
-                            state.actualValues.humidity = values[configCurrentHumid.id].value;
-                        }
-                        updateActualValuesUI(); 
-
-                        // 2. Cập nhật trạng thái Power (đồng bộ 2 chiều)
-                        if (configPower && values[configPower.id] != null) {
-                            const serverPower = !!values[configPower.id].value; 
-                            if (state.power !== serverPower) {
-                                state.power = serverPower;
-                                updatePowerUI(); 
-                            }
-                        }
-
-                        // 3. Cập nhật trạng thái Mode (đồng bộ 2 chiều)
-                        if (configMode && values[configMode.id] != null) {
-                            const serverMode = values[configMode.id].value;
-                            if (state.mode !== serverMode && (serverMode === 'temperature' || serverMode === 'humidity')) {
-                                state.mode = serverMode;
-                                needsModeUpdate = true;
-                            }
-                        }
-
-                        // 4. Cập nhật Setpoints (đồng bộ 2 chiều)
-                        if (configSetpointTemp && values[configSetpointTemp.id] != null) {
-                            const serverSetpointTemp = values[configSetpointTemp.id].value;
-                            if (state.setpoints.temperature !== serverSetpointTemp) {
-                                state.setpoints.temperature = serverSetpointTemp;
-                                needsModeUpdate = true;
-                            }
-                        }
-                        if (configSetpointHumid && values[configSetpointHumid.id] != null) {
-                            const serverSetpointHumid = values[configSetpointHumid.id].value;
-                            if (state.setpoints.humidity !== serverSetpointHumid) {
-                                state.setpoints.humidity = serverSetpointHumid;
-                                needsModeUpdate = true;
-                            }
-                        }
-
-                        // 5. Cập nhật UI cho Mode và Dial (chỉ khi cần)
-                        if (needsModeUpdate) {
-                             updateModeUI(); 
-                        }
-                    }
-                });
+                updatePowerUI();
+                updateActualValuesUI();
+                updateModeUI(); // Tự động gọi updateDialUI
             }
             
-            // Chạy hàm khởi tạo chính
             initializeUI();
+
+
+            // --- ERA PLATFORM INTEGRATION BRIDGE ---
+            window.EraBridge = {
+                /**
+                 * Cập nhật trạng thái On/Off
+                 * @param {boolean} isOn
+                 */
+                setPower: (isOn) => {
+                    console.log('Era -> setPower', isOn);
+                    state.power = !!isOn;
+                    updatePowerUI();
+                },
+
+                /**
+                 * Cập nhật chế độ đang chọn
+                 * @param {'temperature' | 'humidity'} mode
+                 */
+                setMode: (mode) => {
+                    console.log('Era -> setMode', mode);
+                    if (mode === 'temperature' || mode === 'humidity') {
+                        state.mode = mode;
+                        updateModeUI();
+                    }
+                },
+
+                /**
+                 * Cập nhật giá trị thực tế hiển thị
+                 * @param {number} temp - Giá trị nhiệt độ
+                 * @param {number} humidity - Giá trị độ ẩm
+                 */
+                setActualValues: (temp, humidity) => {
+                    console.log('Era -> setActualValues', temp, humidity);
+                    state.actualValues.temperature = temp;
+                    state.actualValues.humidity = humidity;
+                    updateActualValuesUI();
+                },
+
+                /**
+                 * Cập nhật giá trị cài đặt (setpoint)
+                 * @param {number} value - Giá trị cài đặt mới
+                 * @param {'temperature' | 'humidity'} [mode] - Cập nhật cho chế độ nào (nếu không có, cập nhật cho chế độ hiện tại)
+                 */
+                setSetpoint: (value, mode) => {
+                    console.log('Era -> setSetpoint', value, mode);
+                    const targetMode = mode || state.mode;
+                    
+                    if (targetMode === 'temperature' || targetMode === 'humidity') {
+                        state.setpoints[targetMode] = value;
+                    }
+                    
+                    // Chỉ cập nhật dial nếu setpoint này là của mode đang active
+                    if (targetMode === state.mode) {
+                        updateDialUI(value);
+                    }
+                }
+            };
+
         });
     </script>
 </body>
