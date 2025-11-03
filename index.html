@@ -183,13 +183,7 @@
             // Biến cho "Actions" (để GHI)
             let actions = []; 
             
-            // (MỚI) Ánh xạ (Map) Giá trị Action sang Chữ
-            const MODE_MAP = {
-                '1': 'temperature', // Giả định "1" là Action cho Temperature
-                '2': 'humidity'     // Giả định "2" là Action cho Humidity
-                // Chúng ta dùng '1' (string) vì Action của bạn gửi lên là String
-            };
-
+            // (ĐÃ XÓA) Không cần MODE_MAP nữa
 
             // --- LẤY CÁC PHẦN TỬ DOM ---
             const powerToggle = document.getElementById('power-toggle');
@@ -211,7 +205,6 @@
                 powerStatusText.textContent = state.power ? 'On' : 'Off';
             }
             function updateModeUI() {
-                // state.mode PHẢI LÀ 'temperature' hoặc 'humidity'
                 const currentSetpoint = state.setpoints[state.mode]; 
                 if (state.mode === 'temperature') {
                     btnTemperature.classList.add('active');
@@ -297,7 +290,6 @@
             dialHandle.addEventListener('touchstart', onDialStart, { passive: false });
 
             // --- (ĐÃ THAY ĐỔI) GẮN EVENT LISTENERS CHO CÁC NÚT ---
-            // (Logic này đã đúng với yêu cầu của bạn)
             
             // 1. Nút Power (Dùng Actions)
             powerToggleLabel.addEventListener('click', (e) => {
@@ -305,12 +297,12 @@
                 console.log('Power clicked. Current state:', state.power);
                 if (state.power) {
                     if (actions[1]) {
-                        console.log('Triggering Action: POWER_OFF');
+                        console.log('Triggering Action: POWER_OFF (Gửi 0)');
                         eraWidget.triggerAction(actions[1].action, null);
                     }
                 } else {
                     if (actions[0]) {
-                        console.log('Triggering Action: POWER_ON');
+                        console.log('Triggering Action: POWER_ON (Gửi 1)');
                         eraWidget.triggerAction(actions[0].action, null);
                     }
                 }
@@ -319,20 +311,23 @@
             // 2. Nút Mode Temperature (Dùng Actions)
             btnTemperature.addEventListener('click', () => {
                 if (state.mode === 'temperature') return; 
-                if (actions[2]) { // Gọi Action 3 (gửi "1")
-                    console.log('Triggering Action: MODE_TEMP (1)');
+                if (actions[2]) { // Gọi Action 3 (gửi 1)
+                    console.log('Triggering Action: MODE_TEMP (Gửi 1)');
                     eraWidget.triggerAction(actions[2].action, null);
                 }
             });
 
+            /* === (ĐÃ THAY ĐỔI) NÚT HUMIDITY === */
             // 3. Nút Mode Humidity (Dùng Actions)
             btnHumidity.addEventListener('click', () => {
                 if (state.mode === 'humidity') return; 
-                if (actions[3]) { // Gọi Action 4 (gửi "2")
-                    console.log('Triggering Action: MODE_HUMID (2)');
+                if (actions[3]) { // Gọi Action 4 (gửi 0)
+                    // Chú thích này được sửa từ "Gửi 2" thành "Gửi 0"
+                    console.log('Triggering Action: MODE_HUMID (Gửi 0)'); 
                     eraWidget.triggerAction(actions[3].action, null);
                 }
             });
+            /* === KẾT THÚC THAY ĐỔI === */
 
             // --- KHỞI TẠO BAN ĐẦU ---
             function initializeUI() {
@@ -381,7 +376,7 @@
 
                         // 2. Cập nhật trạng thái Power (đồng bộ 2 chiều)
                         if (configPower && values[configPower.id] != null) {
-                            const serverPower = !!values[configPower.id].value; 
+                            const serverPower = !!values[configPower.id].value; // Chuyển 1->true, 0->false
                             if (state.power !== serverPower) {
                                 state.power = serverPower;
                                 updatePowerUI(); 
@@ -389,21 +384,20 @@
                         }
 
                         /* ====================================================== */
-                        // 3. (ĐÃ SỬA) Cập nhật trạng thái Mode (dịch 1, 2)
+                        // 3. (ĐÃ SỬA) Cập nhật trạng thái Mode (dịch 1, 0)
                         if (configMode && values[configMode.id] != null) {
                             
-                            // serverValue sẽ là 1 hoặc 2 (dưới dạng Số hoặc String)
-                            // Bạn nói Action của bạn gửi là String, nên serverValue = "1" hoặc "2"
+                            // serverValue sẽ là 1 hoặc 0 (dưới dạng Số hoặc String)
                             const serverValue = values[configMode.id].value; 
                             console.log('Server Mode Value Received:', serverValue, typeof serverValue);
 
-                            // Dịch giá trị ("1" -> "temperature", "2" -> "humidity")
-                            // Chúng ta dùng "1" (string) vì bạn nói Action của bạn gửi là String "1" và "2"
-                            // Nếu nó có thể gửi cả SỐ 1 và 2, hãy dùng (serverValue == 1)
+                            // Dịch giá trị (1 -> "temperature", 0 -> "humidity")
                             let serverModeAsWord = null;
-                            if (serverValue === '1' || serverValue === 1) { // Chấp nhận cả string "1" và số 1
+                            
+                            // Dùng `==` (so sánh lỏng) để chấp nhận cả số 1 và string "1"
+                            if (serverValue == 1) { 
                                 serverModeAsWord = 'temperature';
-                            } else if (serverValue === '2' || serverValue === 2) { // Chấp nhận cả string "2" và số 2
+                            } else if (serverValue == 0) { // Dùng `==` để chấp nhận cả số 0 và string "0"
                                 serverModeAsWord = 'humidity';
                             }
                             
