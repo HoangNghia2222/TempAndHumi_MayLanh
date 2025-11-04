@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giao diện Điều khiển Tủ lạnh (ERa - Actions)</title>
-    
+    <title>Giao diện Điều khiển Tủ lạnh (ERa - Full Actions)</title>
     <style>
         :root {
             --primary-color: #00a99d; --primary-light: #e6f7f6;
@@ -79,18 +78,12 @@
             margin: 0 auto;
         }
         
-        /* === (ĐÃ THAY ĐỔI) CSS NỀN VÒNG TRÒN === */
         .dial-track {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             border-radius: 50%;
-            /* 1. Luôn là màu gradient cầu vồng */
             background: conic-gradient(from 240deg, #4d9cff, #b15dff, #ff8a5c, #ff8a5c, #b15dff, #4d9cff);
             transition: all 0.3s ease;
         }
-        /* 2. (ĐÃ XÓA) Xóa bỏ khối ".dial-container.fan-mode .dial-track"
-              để vòng tròn luôn có màu.
-        */
-        /* === KẾT THÚC THAY ĐỔI === */
 
         .dial-mask {
             position: absolute; top: 30px; left: 30px; right: 30px; bottom: 30px;
@@ -114,7 +107,6 @@
             z-index: 4; cursor: pointer; user-select: none;
         }
         
-        /* CSS NÚT QUẠT (Không đổi) */
         .fan-btn-circular {
             position: absolute;
             width: 44px;
@@ -154,7 +146,6 @@
             transform: translate(-50%, -50%); /* 9h */
         }
         
-        /* Logic ẨN/HIỆN (không đổi) */
         .dial-container.fan-mode .dial-handle {
             display: none;
         }
@@ -162,7 +153,7 @@
             display: none;
         }
     </style>
-    </head>
+</head>
 <body>
 
     <div class="container">
@@ -432,30 +423,48 @@
             });
 
 
-            // 4. EVENT LISTENERS CHO 4 NÚT QUẠT (Không thay đổi)
+            /* ====================================================== */
+            /* === (ĐÃ THAY ĐỔI) EVENT LISTENERS CHO 4 NÚT QUẠT === */
+            /* ====================================================== */
             fanButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
                     const value = parseInt(btn.dataset.value, 10);
-                    if (configSetpointHumid) {
-                        console.log(`Sending Fan Value: ${value}`);
-                        eraWidget.sendData(configSetpointHumid.id, value);
+                    let actionToTrigger = null;
+                    
+                    // Tìm action tương ứng dựa trên giá trị data-value
+                    if (value === 25 && actions[4]) { // Mức 1 = 25%
+                        actionToTrigger = actions[4].action;
+                    } else if (value === 50 && actions[5]) { // Mức 2 = 50%
+                        actionToTrigger = actions[5].action;
+                    } else if (value === 75 && actions[6]) { // Mức 3 = 75%
+                        actionToTrigger = actions[6].action;
+                    } else if (value === 100 && actions[7]) { // Mức 4 = 100%
+                        actionToTrigger = actions[7].action;
                     }
+                    
+                    if (actionToTrigger) {
+                        console.log(`Triggering Action: SET_FAN_${value}`);
+                        eraWidget.triggerAction(actionToTrigger, null);
+                    }
+                    // Giống như các nút Action khác, chúng ta chờ onValues xác nhận
                 });
             });
+            /* ====================================================== */
 
 
             // --- KHỞI TẠO BAN ĐẦU ---
             function initializeUI() {
                 
                 // --- KHỞI TẠO ERA WIDGET ---
-                // (init, onConfiguration không đổi)
+                /* === (ĐÃ THAY ĐỔI) INIT === */
                 eraWidget.init({
                     needRealtimeConfigs: true,
                     needActions: true, 
-                    maxRealtimeConfigsCount: 6,
+                    maxRealtimeConfigsCount: 6, // 6 config (V1,V2,V3,V4,V5,V6)
                     minRealtimeConfigsCount: 6, 
-                    maxActionsCount: 4, 
-                    minActionsCount: 4,
+                    maxActionsCount: 8, // (MỚI) Cần 8 actions (2 Power, 2 Mode, 4 Fan)
+                    minActionsCount: 8,
+                /* === KẾT THÚC THAY ĐỔI === */
                     
                     onConfiguration: (configuration) => {
                         console.log('Era Config Received:', configuration);
@@ -466,11 +475,13 @@
                         configCurrentHumid = configs[3]; // V4
                         configSetpointTemp = configs[4]; // V5
                         configSetpointHumid = configs[5]; // V-pin V6 (sẽ dùng cho Fan)
-                        actions = configuration.actions;
+                        
+                        // (MỚI) actions bây giờ sẽ là 8 cái
+                        actions = configuration.actions; 
                         console.log('Actions loaded:', actions);
                     },
                     
-                    // (onValues không đổi)
+                    // onValues không thay đổi
                     onValues: (values) => {
                         console.log('Era Values Received:', values);
                         let needsModeUpdate = false; 
