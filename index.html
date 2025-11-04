@@ -72,16 +72,18 @@
             background-color: var(--primary-color); color: var(--white);
             box-shadow: 0 4px 10px rgba(0, 169, 157, 0.3);
         }
+
+        /* === (ĐÃ THAY ĐỔI) CSS CHO NÚM VẶN/QUẠT === */
         .dial-container {
             position: relative; width: 260px; height: 260px;
-            margin: 0 auto; touch-action: none;
-            /* (MỚI) Thêm để ẩn/hiện mượt mà */
-            transition: all 0.2s ease;
+            margin: 0 auto;
         }
         .dial-track {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             border-radius: 50%;
-            background: conic-gradient(from 240deg, #4d9cff, #b15dff, #ff8a5c, #ff8a5c, #b15dff, #4d9cff);
+            /* Đổi thành vòng tròn tĩnh màu xám nhạt */
+            background: var(--inactive-color);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
         .dial-mask {
             position: absolute; top: 30px; left: 30px; right: 30px; bottom: 30px;
@@ -94,6 +96,8 @@
         .dial-center-display {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%); z-index: 3; text-align: center;
+            /* (MỚI) Thêm để đảm bảo text luôn ở trên */
+            pointer-events: none; 
         }
         .dial-temp-value { font-size: 52px; font-weight: 700; color: var(--text-dark); line-height: 1.1; }
         .dial-subtext { font-size: 14px; font-weight: 500; color: var(--text-light); margin-top: 4px; }
@@ -103,52 +107,55 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             z-index: 4; cursor: pointer; user-select: none;
         }
-        .dial-tick { display: none; }
         
-        /* === (MỚI) CSS CHO CÁC NÚT BẤM QUẠT === */
-        .fan-controls-container {
-            /* Chiếm không gian giống hệt núm vặn */
-            position: relative;
-            width: 260px;
-            height: 260px;
-            margin: 0 auto;
-            /* Ẩn đi lúc đầu */
-            display: none; 
-        }
-        .fan-buttons-grid {
-            /* Lưới 2x2 */
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 15px;
-            height: 100%;
-        }
-        .fan-btn {
-            /* Style giống nút Mode */
-            border: none;
-            background-color: var(--inactive-color);
-            border-radius: 12px;
+        /* (MỚI) CSS NÚT TRÒN CỦA QUẠT */
+        .fan-btn-circular {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: var(--text-dark);
+            color: var(--white);
             font-size: 16px;
             font-weight: 600;
-            color: var(--text-light);
+            border: 4px solid var(--white);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            z-index: 3;
             cursor: pointer;
-            transition: all 0.3s ease;
-            
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            line-height: 1.4;
+            transition: all 0.2s ease;
         }
-        .fan-btn span {
-            font-size: 12px;
-            font-weight: 500;
-        }
-        /* Style cho nút active (giống hệt .mode-btn.active) */
-        .fan-btn.active {
+        .fan-btn-circular.active {
             background-color: var(--primary-color);
-            color: var(--white);
-            box-shadow: 0 4px 10px rgba(0, 169, 157, 0.3);
+            box-shadow: 0 6px 15px rgba(0, 169, 157, 0.4);
+        }
+        
+        /* (MỚI) Định vị 4 nút */
+        #fan-btn-1 {
+            top: 0; left: 50%;
+            transform: translate(-50%, -50%); /* 12h */
+        }
+        #fan-btn-2 {
+            top: 50%; right: 0;
+            transform: translate(50%, -50%); /* 3h */
+        }
+        #fan-btn-3 {
+            bottom: 0; left: 50%;
+            transform: translate(-50%, 50%); /* 6h */
+        }
+        #fan-btn-4 {
+            top: 50%; left: 0;
+            transform: translate(-50%, -50%); /* 9h */
+        }
+        
+        /* (MỚI) Logic ẨN/HIỆN */
+        
+        /* Khi ở Fan Mode, ẨN núm vặn */
+        .dial-container.fan-mode .dial-handle {
+            display: none;
+        }
+        /* Khi KHÔNG ở Fan Mode, ẨN các nút quạt */
+        .dial-container:not(.fan-mode) .fan-btn-circular {
+            display: none;
         }
         /* === KẾT THÚC CSS MỚI === */
 
@@ -197,21 +204,13 @@
                 <div id="dial-value-display" class="dial-temp-value">...°</div>
                 <div id="dial-subtext" class="dial-subtext">...</div>
             </div>
-            <div id="dial-handle" class="dial-handle"></div>
-        </div>
 
-        <div id="fan-controls" class="fan-controls-container">
-            <div class="dial-center-display">
-                <div id="fan-value-display" class="dial-temp-value">...%</div>
-                <div id="fan-subtext" class="dial-subtext">...</div>
-            </div>
+            <div id="dial-handle" class="dial-handle"></div>
             
-            <div class="fan-buttons-grid">
-                 <button class="fan-btn" id="fan-btn-1" data-value="25">Mức 1 <span>(25%)</span></button>
-                 <button class="fan-btn" id="fan-btn-2" data-value="50">Mức 2 <span>(50%)</span></button>
-                 <button class="fan-btn" id="fan-btn-3" data-value="75">Mức 3 <span>(75%)</span></button>
-                 <button class="fan-btn" id="fan-btn-4" data-value="100">Mức 4 <span>(100%)</span></button>
-            </div>
+            <button class="fan-btn-circular" id="fan-btn-1" data-value="25">1</button>
+            <button class="fan-btn-circular" id="fan-btn-2" data-value="50">2</button>
+            <button class="fan-btn-circular" id="fan-btn-3" data-value="75">3</button>
+            <button class="fan-btn-circular" id="fan-btn-4" data-value="100">4</button>
         </div>
         </div>
 
@@ -267,11 +266,8 @@
             const dialValueDisplay = document.getElementById('dial-value-display');
             const dialSubtext = document.getElementById('dial-subtext');
 
-            // (MỚI) DOM cho Khung Quạt
-            const fanControls = document.getElementById('fan-controls');
-            const fanValueDisplay = document.getElementById('fan-value-display');
-            const fanSubtext = document.getElementById('fan-subtext');
-            const fanButtons = document.querySelectorAll('.fan-btn');
+            // (MỚI) DOM cho 4 Nút Quạt Tròn
+            const fanButtons = document.querySelectorAll('.fan-btn-circular');
             /* === KẾT THÚC THAY ĐỔI === */
 
 
@@ -279,12 +275,12 @@
             /** Dịch giá trị 25-100 thành Mức 1-4 */
             function getFanLevelText(value) {
                 // Làm tròn về 4 mức (25, 50, 75, 100)
-                // Phải so sánh `value` với các mức này
                 if (value <= 25) return 'Mức 1';
                 if (value <= 50) return 'Mức 2';
                 if (value <= 75) return 'Mức 3';
                 return 'Mức 4';
             }
+            // (MỚI) Xóa hàm snapFanValue (không cần nữa)
             /* === KẾT THÚC THAY ĐỔI === */
 
 
@@ -300,15 +296,14 @@
             }
 
             /* === (ĐÃ THAY ĐỔI) updateModeUI === */
-            // Chia làm 2: Ẩn/hiện núm vặn HOẶC 4 nút
+            // Ẩn/hiện núm vặn HOẶC 4 nút
             function updateModeUI() {
                 if (state.mode === 'temperature') {
                     btnTemperature.classList.add('active');
                     btnHumidity.classList.remove('active');
                     
-                    // Hiển thị núm vặn, ẩn các nút quạt
-                    dialContainer.style.display = 'block';
-                    fanControls.style.display = 'none';
+                    // Thêm/xóa class .fan-mode
+                    dialContainer.classList.remove('fan-mode');
 
                     // Cập nhật UI cho núm vặn
                     updateDialUI(state.setpoints.temperature); 
@@ -316,9 +311,8 @@
                     btnTemperature.classList.remove('active');
                     btnHumidity.classList.add('active');
 
-                    // Ẩn núm vặn, hiển thị các nút quạt
-                    dialContainer.style.display = 'none';
-                    fanControls.style.display = 'block';
+                    // Thêm/xóa class .fan-mode
+                    dialContainer.classList.add('fan-mode');
 
                     // Cập nhật UI cho các nút quạt
                     updateFanUI(state.setpoints.fan);
@@ -327,15 +321,20 @@
             /* === KẾT THÚC THAY ĐỔI === */
 
 
-            // (updateDialUI không đổi, nhưng nó chỉ chạy cho 'temperature')
+            /* === (ĐÃ THAY ĐỔI) updateDialUI === */
+            // Cập nhật text trung tâm cho Temperature
             function updateDialUI(value) {
-                const config = state.dialConfig[state.mode]; // Sẽ là 'temperature'
-                if (!config) return; 
+                const config = state.dialConfig.temperature; // Chỉ lấy config của Temp
                 const { min, max, unit, subtext } = config;
                 const { minAngle, arc } = state.dialPhysics;
+                
                 const clampedValue = Math.max(min, Math.min(max, value));
+                
+                // Cập nhật text trung tâm
                 dialValueDisplay.textContent = Math.round(clampedValue) + unit;
-                dialSubtext.textContent = subtext;
+                dialSubtext.textContent = subtext; // "Cài đặt nhiệt"
+
+                // Tính toán vị trí núm vặn
                 const percent = (clampedValue - min) / (max - min);
                 const angleDeg = percent * arc + minAngle;
                 const angleRad = angleDeg * (Math.PI / 180);
@@ -347,12 +346,17 @@
                 const y = dialRadius + trackRadius * Math.sin(angleRad) - handleRadius;
                 dialHandle.style.transform = `translate(${x}px, ${y}px)`;
             }
+            /* === KẾT THÚC THAY ĐỔI === */
+
 
             /* === (MỚI) HÀM CẬP NHẬT UI CHO QUẠT === */
             function updateFanUI(value) {
-                // Cập nhật text trung tâm
-                fanValueDisplay.textContent = value + '%';
-                fanSubtext.textContent = getFanLevelText(value); // "Mức 1", "Mức 2"...
+                const config = state.dialConfig.fan; // Lấy config của Fan
+
+                // Cập nhật text trung tâm (dùng chung .dial-value-display)
+                dialValueDisplay.textContent = value + config.unit; // "50%"
+                // Hiển thị "Tốc Độ Quạt" + "Mức 2"
+                dialSubtext.innerHTML = `${config.subtext}<br><b style="font-weight: 700; color: var(--text-dark);">${getFanLevelText(value)}</b>`;
                 
                 // Cập nhật nút active
                 fanButtons.forEach(btn => {
@@ -366,6 +370,7 @@
             // --- LOGIC CỦA VÒNG XOAY (DIAL) ---
             // (Các hàm này giờ CHỈ DÀNH CHO 'temperature')
             let isDragging = false;
+            
             function getAngleFromEvent(event) {
                 const e = event.touches ? event.touches[0] : event;
                 const rect = dialContainer.getBoundingClientRect();
@@ -374,7 +379,7 @@
                 const angleRad = Math.atan2(e.clientY - centerY, e.clientX - centerX);
                 return angleRad * (180 / Math.PI);
             }
-            
+
             /* === (ĐÃ THAY ĐỔI) onDialMove/Start === */
             // Thêm kiểm tra, chỉ chạy nếu là mode 'temperature'
             function onDialMove(event) {
@@ -390,7 +395,7 @@
                 percent = Math.max(0, Math.min(1, percent));
                 const newValue = Math.round(percent * (max - min) + min);
                 state.setpoints[state.mode] = newValue; 
-                updateDialUI(newValue);
+                updateDialUI(newValue); // Chỉ gọi update cho Dial
             }
             function onDialStart(event) {
                 if (state.mode !== 'temperature') return; // Không cho kéo nếu là Fan Mode
@@ -421,6 +426,7 @@
             }
             /* === KẾT THÚC THAY ĐỔI === */
 
+            // Gắn listener cho núm vặn
             dialHandle.addEventListener('mousedown', onDialStart);
             dialHandle.addEventListener('touchstart', onDialStart, { passive: false });
 
@@ -570,8 +576,8 @@
                         // Đọc từ V-pin V6 (configSetpointHumid) và lưu vào state.setpoints.fan
                         if (configSetpointHumid && values[configSetpointHumid.id] != null) {
                             const serverSetpointFan = values[configSetpointHumid.id].value;
+                            // Đổi 'humidity' thành 'fan'
                             if (state.setpoints.fan !== serverSetpointFan) {
-                                // (MỚI) Lưu giá trị Fan
                                 state.setpoints.fan = serverSetpointFan; 
                                 needsModeUpdate = true;
                             }
