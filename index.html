@@ -471,10 +471,10 @@
                         const configs = configuration.realtime_configs;
                         configPower = configs[0];
                         configMode = configs[1]; // V-pin Mode (V2)
-                        configCurrentTemp = configs[2]; // V3
-                        configCurrentHumid = configs[3]; // V4
-                        configSetpointTemp = configs[4]; // V5
-                        configSetpointHumid = configs[5]; // V-pin V6 (sẽ dùng cho Fan)
+                        configCurrentTemp = configs[3]; // V3
+                        configCurrentHumid = configs[4]; // V4
+                        configSetpointTemp = configs[5]; // V5
+                        configSetpointHumid = configs[2]; // V-pin V6 (sẽ dùng cho Fan)
                         
                         // (MỚI) actions bây giờ sẽ là 8 cái
                         actions = configuration.actions; 
@@ -555,3 +555,4 @@
     </script>
 </body>
 </html>
+
