@@ -75,6 +75,8 @@
         .dial-container {
             position: relative; width: 260px; height: 260px;
             margin: 0 auto; touch-action: none;
+            /* (MỚI) Thêm để ẩn/hiện mượt mà */
+            transition: all 0.2s ease;
         }
         .dial-track {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -102,6 +104,54 @@
             z-index: 4; cursor: pointer; user-select: none;
         }
         .dial-tick { display: none; }
+        
+        /* === (MỚI) CSS CHO CÁC NÚT BẤM QUẠT === */
+        .fan-controls-container {
+            /* Chiếm không gian giống hệt núm vặn */
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 0 auto;
+            /* Ẩn đi lúc đầu */
+            display: none; 
+        }
+        .fan-buttons-grid {
+            /* Lưới 2x2 */
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+            height: 100%;
+        }
+        .fan-btn {
+            /* Style giống nút Mode */
+            border: none;
+            background-color: var(--inactive-color);
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            line-height: 1.4;
+        }
+        .fan-btn span {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        /* Style cho nút active (giống hệt .mode-btn.active) */
+        .fan-btn.active {
+            background-color: var(--primary-color);
+            color: var(--white);
+            box-shadow: 0 4px 10px rgba(0, 169, 157, 0.3);
+        }
+        /* === KẾT THÚC CSS MỚI === */
+
     </style>
 </head>
 <body>
@@ -150,7 +200,20 @@
             <div id="dial-handle" class="dial-handle"></div>
         </div>
 
-    </div>
+        <div id="fan-controls" class="fan-controls-container">
+            <div class="dial-center-display">
+                <div id="fan-value-display" class="dial-temp-value">...%</div>
+                <div id="fan-subtext" class="dial-subtext">...</div>
+            </div>
+            
+            <div class="fan-buttons-grid">
+                 <button class="fan-btn" id="fan-btn-1" data-value="25">Mức 1 <span>(25%)</span></button>
+                 <button class="fan-btn" id="fan-btn-2" data-value="50">Mức 2 <span>(50%)</span></button>
+                 <button class="fan-btn" id="fan-btn-3" data-value="75">Mức 3 <span>(75%)</span></button>
+                 <button class="fan-btn" id="fan-btn-4" data-value="100">Mức 4 <span>(100%)</span></button>
+            </div>
+        </div>
+        </div>
 
     <script src="https://www.unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
     
@@ -163,7 +226,7 @@
                 power: true,
                 mode: 'temperature',
                 actualValues: { temperature: 0, humidity: 0 }, 
-                // Đổi 'humidity' thành 'fan'
+                // Đổi 'humidity' thành 'fan', mặc định mức 2 (50%)
                 setpoints: { temperature: 20, fan: 50 }, 
                 dialConfig: {
                     temperature: { min: 0, max: 40, unit: '°', subtext: 'Cài đặt nhiệt' },
@@ -189,91 +252,90 @@
             // Biến cho "Actions" (để GHI)
             let actions = []; 
             
-            // --- LẤY CÁC PHẦN TỬ DOM ---
+            /* === (ĐÃ THAY ĐỔI) LẤY CÁC PHẦN TỬ DOM === */
             const powerToggle = document.getElementById('power-toggle');
             const powerToggleLabel = document.querySelector('label[for="power-toggle"]'); 
             const powerStatusText = document.getElementById('power-status-text');
             const currentTemp = document.getElementById('current-temperature');
             const currentHumid = document.getElementById('current-humidity');
             const btnTemperature = document.getElementById('mode-temperature');
-            // Biến này vẫn giữ tên 'btnHumidity' vì ID của nút không đổi
-            const btnHumidity = document.getElementById('mode-humidity'); 
+            const btnHumidity = document.getElementById('mode-humidity'); // Nút Fan Mode
+            
+            // DOM cho Núm vặn
             const dialContainer = document.getElementById('dial-container');
             const dialHandle = document.getElementById('dial-handle');
             const dialValueDisplay = document.getElementById('dial-value-display');
             const dialSubtext = document.getElementById('dial-subtext');
 
+            // (MỚI) DOM cho Khung Quạt
+            const fanControls = document.getElementById('fan-controls');
+            const fanValueDisplay = document.getElementById('fan-value-display');
+            const fanSubtext = document.getElementById('fan-subtext');
+            const fanButtons = document.querySelectorAll('.fan-btn');
+            /* === KẾT THÚC THAY ĐỔI === */
+
+
             /* === (ĐÃ THAY ĐỔI) HÀM HELPER MỚI === */
-            /** Dịch giá trị 0-100 thành Mức 1-4 */
+            /** Dịch giá trị 25-100 thành Mức 1-4 */
             function getFanLevelText(value) {
                 // Làm tròn về 4 mức (25, 50, 75, 100)
-                if (value <= 37.5) return 'Mức 1'; // 0-37
-                if (value <= 62.5) return 'Mức 2'; // 38-62
-                if (value <= 87.5) return 'Mức 3'; // 63-87
-                return 'Mức 4'; // 88-100
-            }
-
-            /** Làm tròn giá trị 0-100 về 4 mức */
-            function snapFanValue(value) {
-                if (value <= 37.5) return 25;
-                if (value <= 62.5) return 50;
-                if (value <= 87.5) return 75;
-                return 100;
+                // Phải so sánh `value` với các mức này
+                if (value <= 25) return 'Mức 1';
+                if (value <= 50) return 'Mức 2';
+                if (value <= 75) return 'Mức 3';
+                return 'Mức 4';
             }
             /* === KẾT THÚC THAY ĐỔI === */
 
 
             // --- CÁC HÀM CẬP NHẬT GIAO DIỆN ---
+            // (updatePowerUI, updateActualValuesUI không đổi)
             function updatePowerUI() {
                 powerToggle.checked = state.power; 
                 powerStatusText.textContent = state.power ? 'On' : 'Off';
             }
-
-            /* === (ĐÃ THAY ĐỔI) updateModeUI === */
-            function updateModeUI() {
-                // state.mode bây giờ là 'temperature' hoặc 'fan'
-                const currentSetpoint = state.setpoints[state.mode]; 
-                if (state.mode === 'temperature') {
-                    btnTemperature.classList.add('active');
-                    btnHumidity.classList.remove('active');
-                } else { // 'fan'
-                    btnTemperature.classList.remove('active');
-                    btnHumidity.classList.add('active');
-                }
-                updateDialUI(currentSetpoint);
-            }
-            /* === KẾT THÚC THAY ĐỔI === */
-
             function updateActualValuesUI() {
                 currentTemp.textContent = Math.round(state.actualValues.temperature);
                 currentHumid.textContent = Math.round(state.actualValues.humidity);
             }
 
-            /* === (ĐÃ THAY ĐỔI) updateDialUI === */
-            // Sửa để hiển thị Mức 1, 2, 3, 4
-            function updateDialUI(value) {
-                const config = state.dialConfig[state.mode];
-                if (!config) return; 
-                
-                // Lấy 'unit' và 'subtext' gốc từ config
-                const { min, max, unit, subtext: originalSubtext } = config;
-                const { minAngle, arc } = state.dialPhysics;
-                
-                const clampedValue = Math.max(min, Math.min(max, value));
-                
-                // Hiển thị giá trị (0-100)
-                dialValueDisplay.textContent = Math.round(clampedValue) + unit;
-                
-                // (MỚI) Hiển thị subtext động
-                let subtextToShow;
+            /* === (ĐÃ THAY ĐỔI) updateModeUI === */
+            // Chia làm 2: Ẩn/hiện núm vặn HOẶC 4 nút
+            function updateModeUI() {
                 if (state.mode === 'temperature') {
-                    subtextToShow = originalSubtext; // "Cài đặt nhiệt"
-                } else { // 'fan' mode
-                    subtextToShow = getFanLevelText(clampedValue); // "Mức 1", "Mức 2"...
+                    btnTemperature.classList.add('active');
+                    btnHumidity.classList.remove('active');
+                    
+                    // Hiển thị núm vặn, ẩn các nút quạt
+                    dialContainer.style.display = 'block';
+                    fanControls.style.display = 'none';
+
+                    // Cập nhật UI cho núm vặn
+                    updateDialUI(state.setpoints.temperature); 
+                } else { // 'fan'
+                    btnTemperature.classList.remove('active');
+                    btnHumidity.classList.add('active');
+
+                    // Ẩn núm vặn, hiển thị các nút quạt
+                    dialContainer.style.display = 'none';
+                    fanControls.style.display = 'block';
+
+                    // Cập nhật UI cho các nút quạt
+                    updateFanUI(state.setpoints.fan);
                 }
-                dialSubtext.textContent = subtextToShow;
-                
-                // Phần tính toán góc không đổi
+            }
+            /* === KẾT THÚC THAY ĐỔI === */
+
+
+            // (updateDialUI không đổi, nhưng nó chỉ chạy cho 'temperature')
+            function updateDialUI(value) {
+                const config = state.dialConfig[state.mode]; // Sẽ là 'temperature'
+                if (!config) return; 
+                const { min, max, unit, subtext } = config;
+                const { minAngle, arc } = state.dialPhysics;
+                const clampedValue = Math.max(min, Math.min(max, value));
+                dialValueDisplay.textContent = Math.round(clampedValue) + unit;
+                dialSubtext.textContent = subtext;
                 const percent = (clampedValue - min) / (max - min);
                 const angleDeg = percent * arc + minAngle;
                 const angleRad = angleDeg * (Math.PI / 180);
@@ -285,12 +347,25 @@
                 const y = dialRadius + trackRadius * Math.sin(angleRad) - handleRadius;
                 dialHandle.style.transform = `translate(${x}px, ${y}px)`;
             }
-            /* === KẾT THÚC THAY ĐỔI === */
+
+            /* === (MỚI) HÀM CẬP NHẬT UI CHO QUẠT === */
+            function updateFanUI(value) {
+                // Cập nhật text trung tâm
+                fanValueDisplay.textContent = value + '%';
+                fanSubtext.textContent = getFanLevelText(value); // "Mức 1", "Mức 2"...
+                
+                // Cập nhật nút active
+                fanButtons.forEach(btn => {
+                    // Dùng `==` (so sánh lỏng) vì giá trị từ server có thể là string
+                    btn.classList.toggle('active', btn.dataset.value == value);
+                });
+            }
+            /* === KẾT THÚC HÀM MỚI === */
 
 
             // --- LOGIC CỦA VÒNG XOAY (DIAL) ---
+            // (Các hàm này giờ CHỈ DÀNH CHO 'temperature')
             let isDragging = false;
-            // (Hàm getAngleFromEvent, onDialMove, onDialStart không đổi)
             function getAngleFromEvent(event) {
                 const e = event.touches ? event.touches[0] : event;
                 const rect = dialContainer.getBoundingClientRect();
@@ -299,8 +374,11 @@
                 const angleRad = Math.atan2(e.clientY - centerY, e.clientX - centerX);
                 return angleRad * (180 / Math.PI);
             }
+            
+            /* === (ĐÃ THAY ĐỔI) onDialMove/Start === */
+            // Thêm kiểm tra, chỉ chạy nếu là mode 'temperature'
             function onDialMove(event) {
-                if (!isDragging) return;
+                if (!isDragging || state.mode !== 'temperature') return; // Không làm gì nếu là Fan Mode
                 event.preventDefault();
                 let angleDeg = getAngleFromEvent(event);
                 const config = state.dialConfig[state.mode];
@@ -311,21 +389,21 @@
                 let percent = (angleDeg - minAngle) / arc;
                 percent = Math.max(0, Math.min(1, percent));
                 const newValue = Math.round(percent * (max - min) + min);
-                
-                // Cập nhật state (đổi 'humidity' thành 'fan')
-                state.setpoints[state.mode] = newValue; // state.mode là 'fan'
+                state.setpoints[state.mode] = newValue; 
                 updateDialUI(newValue);
             }
             function onDialStart(event) {
+                if (state.mode !== 'temperature') return; // Không cho kéo nếu là Fan Mode
                 isDragging = true;
                 window.addEventListener('mousemove', onDialMove);
                 window.addEventListener('touchmove', onDialMove, { passive: false });
                 window.addEventListener('mouseup', onDialEnd);
                 window.addEventListener('touchend', onDialEnd);
             }
+            /* === KẾT THÚC THAY ĐỔI === */
 
             /* === (ĐÃ THAY ĐỔI) onDialEnd === */
-            // Thêm logic "snapping" (làm tròn)
+            // Xóa logic của 'fan'
             function onDialEnd(event) {
                 if (!isDragging) return;
                 isDragging = false;
@@ -336,23 +414,9 @@
                 
                 const finalSetpoint = state.setpoints[state.mode];
                 
+                // Chỉ còn lại logic cho 'temperature'
                 if (state.mode === 'temperature' && configSetpointTemp) {
-                    // Chế độ nhiệt: Gửi giá trị bình thường
                     eraWidget.sendData(configSetpointTemp.id, finalSetpoint);
-                } 
-                // (MỚI) Logic cho Fan Mode
-                else if (state.mode === 'fan' && configSetpointHumid) { // Vẫn dùng V-pin V6 (configSetpointHumid)
-                    
-                    // 1. Làm tròn giá trị về 1 trong 4 mức
-                    const snappedValue = snapFanValue(finalSetpoint);
-                    
-                    // 2. Cập nhật lại state và UI về giá trị đã làm tròn
-                    state.setpoints.fan = snappedValue;
-                    updateDialUI(snappedValue); 
-                    
-                    // 3. Gửi giá trị ĐÃ LÀM TRÒN (25, 50, 75, 100) lên server
-                    console.log(`Fan Mode Set: Snapped ${finalSetpoint} to ${snappedValue}`);
-                    eraWidget.sendData(configSetpointHumid.id, snappedValue);
                 }
             }
             /* === KẾT THÚC THAY ĐỔI === */
@@ -401,11 +465,30 @@
             /* === KẾT THÚC THAY ĐỔI === */
 
 
+            /* === (MỚI) EVENT LISTENERS CHO 4 NÚT QUẠT === */
+            fanButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const value = parseInt(btn.dataset.value, 10);
+                    
+                    // Gửi giá trị (25, 50, 75, 100) lên V-pin V6 (configSetpointHumid)
+                    // Dùng 'sendData' (KHÔNG PHẢI Action)
+                    if (configSetpointHumid) {
+                        console.log(`Sending Fan Value: ${value}`);
+                        eraWidget.sendData(configSetpointHumid.id, value);
+                    }
+                    
+                    // Giống như Action, chúng ta chờ onValues xác nhận
+                    // (Không cập nhật UI ngay lập tức)
+                });
+            });
+            /* === KẾT THÚC HÀM MỚI === */
+
+
             // --- KHỞI TẠO BAN ĐẦU ---
             function initializeUI() {
                 
                 // --- KHỞI TẠO ERA WIDGET ---
-                // (Khối init không thay đổi)
+                // (init, onConfiguration không đổi)
                 eraWidget.init({
                     needRealtimeConfigs: true,
                     needActions: true, 
@@ -414,22 +497,15 @@
                     maxActionsCount: 4, 
                     minActionsCount: 4,
                     
-                    /* onConfiguration không thay đổi, 
-                       chỉ có tên biến thay đổi ý nghĩa (configs[1] là Mode, configs[5] là Fan Setpoint)
-                    */
                     onConfiguration: (configuration) => {
                         console.log('Era Config Received:', configuration);
                         const configs = configuration.realtime_configs;
-                        
-                        // Cài đặt theo thứ tự của bạn
                         configPower = configs[0];
                         configMode = configs[1]; // V-pin Mode (V2)
                         configCurrentTemp = configs[2]; // V3
                         configCurrentHumid = configs[3]; // V4
                         configSetpointTemp = configs[4]; // V5
-                        // V-pin V6 (configs[5]) giờ sẽ là Fan Setpoint
-                        configSetpointHumid = configs[5]; 
-                        
+                        configSetpointHumid = configs[5]; // V-pin V6 (sẽ dùng cho Fan)
                         actions = configuration.actions;
                         console.log('Actions loaded:', actions);
                     },
@@ -442,7 +518,6 @@
                         let needsModeUpdate = false; 
 
                         // 1. CẬP NHẬT GIÁ TRỊ CẢM BIẾN (V3, V4)
-                        // (Không thay đổi)
                         if (configCurrentTemp && values[configCurrentTemp.id] != null) {
                             state.actualValues.temperature = values[configCurrentTemp.id].value;
                         }
@@ -452,7 +527,6 @@
                         updateActualValuesUI(); 
 
                         // 2. Cập nhật trạng thái Power (đồng bộ 2 chiều)
-                        // (Không thay đổi)
                         if (configPower && values[configPower.id] != null) {
                             const serverPower = !!values[configPower.id].value; 
                             if (state.power !== serverPower) {
@@ -474,7 +548,7 @@
                                 serverModeAsWord = 'temperature';
                             } else if (serverValue == 0) { 
                                 // Đổi 'humidity' thành 'fan'
-                                serverModeAsWord = 'fan'; 
+                                serverModeAsWord = 'fan';
                             }
                             
                             if (serverModeAsWord && state.mode !== serverModeAsWord) {
@@ -497,14 +571,15 @@
                         if (configSetpointHumid && values[configSetpointHumid.id] != null) {
                             const serverSetpointFan = values[configSetpointHumid.id].value;
                             if (state.setpoints.fan !== serverSetpointFan) {
-                                state.setpoints.fan = serverSetpointFan;
+                                // (MỚI) Lưu giá trị Fan
+                                state.setpoints.fan = serverSetpointFan; 
                                 needsModeUpdate = true;
                             }
                         }
                         /* ====================================================== */
 
 
-                        // 5. Cập nhật UI cho Mode và Dial (chỉ khi cần)
+                        // 5. Cập nhật UI cho Mode và Dial/Fan (chỉ khi cần)
                         if (needsModeUpdate) {
                              updateModeUI(); 
                         }
